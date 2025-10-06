@@ -7,6 +7,7 @@ interface AuthState {
   user: User | null
   accessToken: string | null
   isAuthenticated: boolean
+  isInitialized: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => void
   setUser: (user: User) => void
@@ -19,16 +20,42 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: localStorage.getItem('accessToken'),
   isAuthenticated: !!localStorage.getItem('accessToken'),
+  isInitialized: false,
 
   login: async (email, password) => {
     const response = await authApi.login({ email, password })
-    localStorage.setItem('accessToken', response.accessToken)
-    localStorage.setItem('refreshToken', response.refreshToken)
-    set({
-      user: response.user,
-      accessToken: response.accessToken,
-      isAuthenticated: true,
-    })
+    console.log('로그인 응답:', response)
+
+    if ('success' in response && response.success) {
+      const { accessToken, refreshToken } = response.data
+      localStorage.setItem('accessToken', accessToken)
+      localStorage.setItem('refreshToken', refreshToken)
+
+      // 사용자 정보는 별도로 조회
+      try {
+        console.log('사용자 정보 조회 시작...')
+        const userResponse = await userApi.getMe()
+        console.log('사용자 정보 응답:', userResponse)
+
+        // ApiResponse 형식 처리
+        const user = 'success' in userResponse && userResponse.success
+          ? userResponse.data
+          : userResponse
+
+        set({
+          user,
+          accessToken,
+          isAuthenticated: true,
+        })
+      } catch (error) {
+        console.error('사용자 정보 조회 실패:', error)
+        // 사용자 정보 조회 실패 시 로그아웃
+        get().logout()
+        throw error
+      }
+    } else if ('success' in response && !response.success) {
+      throw new Error(response.message)
+    }
   },
 
   logout: () => {
@@ -49,11 +76,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkProfileComplete: () => {
     const { user } = get()
     return !!(
-      user?.profileImage &&
-      user?.gender &&
-      user?.ageGroup &&
-      user?.favoriteTeams?.length &&
-      user.favoriteTeams.length > 0
+      user?.profile.profileImageUrl &&
+      user?.profile.gender &&
+      user?.profile.ageRange &&
+      user?.profile.teams?.length &&
+      user.profile.teams.length > 0
     )
   },
 
@@ -61,12 +88,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const token = localStorage.getItem('accessToken')
     if (token) {
       try {
-        const user = await userApi.getMe()
-        set({ user, isAuthenticated: true, accessToken: token })
+        console.log('초기화: 사용자 정보 조회 시작...')
+        const userResponse = await userApi.getMe()
+        console.log('초기화: 사용자 정보 응답:', userResponse)
+
+        const user = 'success' in userResponse && userResponse.success
+          ? userResponse.data
+          : userResponse
+
+        set({ user, isAuthenticated: true, accessToken: token, isInitialized: true })
       } catch (error) {
+        console.error('초기화: 사용자 정보 조회 실패:', error)
         // 토큰이 유효하지 않으면 로그아웃
         get().logout()
+        set({ isInitialized: true })
       }
+    } else {
+      set({ isInitialized: true })
     }
   },
 }))
