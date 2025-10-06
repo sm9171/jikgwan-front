@@ -1,5 +1,11 @@
 import { User } from './user'
 
+// 성별
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER'
+
+// 연령대
+export type AgeRange = 'TEENS' | 'TWENTIES' | 'THIRTIES' | 'FORTIES' | 'FIFTIES_PLUS'
+
 export interface LoginRequest {
   email: string
   password: string
@@ -9,6 +15,14 @@ export interface SignupRequest {
   email: string
   password: string
   nickname: string
+  gender: Gender
+  ageRange: AgeRange
+}
+
+export interface TokenData {
+  accessToken: string
+  refreshToken: string
+  tokenType: string
 }
 
 export interface AuthResponse {
@@ -24,3 +38,26 @@ export interface RefreshTokenRequest {
 export interface RefreshTokenResponse {
   accessToken: string
 }
+
+// 필드 에러
+export interface FieldErrors {
+  [key: string]: string
+}
+
+// 에러 응답
+export interface ErrorResponse {
+  success: false
+  errorCode: string
+  message: string
+  fieldErrors?: FieldErrors | null
+}
+
+// API 응답 (성공)
+export interface SuccessResponse<T> {
+  success: true
+  data: T
+  error: null
+}
+
+// API 응답 (통합)
+export type ApiResponse<T> = SuccessResponse<T> | ErrorResponse

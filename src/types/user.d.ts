@@ -1,13 +1,16 @@
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER'
+export type AgeRange = 'TEENS' | 'TWENTIES' | 'THIRTIES' | 'FORTIES' | 'FIFTIES_PLUS'
+
+export interface Profile {
+  profileImageUrl: string | null
+  gender: Gender
+  ageRange: AgeRange
+  teams: string[]
+}
+
 export interface User {
   id: number
   email: string
   nickname: string
-  gender?: Gender
-  ageGroup?: AgeGroup
-  favoriteTeams?: string[]
-  profileImage?: string
-  createdAt: string
+  profile: Profile
 }
-
-export type Gender = 'male' | 'female' | 'other'
-export type AgeGroup = '10s' | '20s' | '30s' | '40s' | '50+'
