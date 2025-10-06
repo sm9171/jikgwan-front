@@ -7,6 +7,7 @@ import { ROUTES } from '@/constants/routes'
 import { validateSignupForm } from '@/utils/validation'
 import { toast } from 'react-toastify'
 import type { Gender, AgeRange } from '@/types/auth'
+import { TEAMS } from '@/constants/teams'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export default function Signup() {
     nickname: '',
     gender: '' as Gender | '',
     ageRange: '' as AgeRange | '',
+    supportingTeams: [] as string[],
   })
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -23,6 +25,15 @@ export default function Signup() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleTeamToggle = (teamCode: string) => {
+    setFormData((prev) => {
+      const teams = prev.supportingTeams.includes(teamCode)
+        ? prev.supportingTeams.filter((t) => t !== teamCode)
+        : [...prev.supportingTeams, teamCode]
+      return { ...prev, supportingTeams: teams }
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,6 +54,7 @@ export default function Signup() {
         nickname: formData.nickname,
         gender: formData.gender as Gender,
         ageRange: formData.ageRange as AgeRange,
+        supportingTeams: formData.supportingTeams,
       })
 
       if ('success' in response && response.success) {
@@ -146,6 +158,33 @@ export default function Signup() {
                 <option value="FIFTIES_PLUS">50대 이상</option>
               </select>
               {errors.ageRange && <p className="mt-1 text-sm text-red-500">{errors.ageRange}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                응원하는 구단 (선택사항)
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {TEAMS.map((team) => (
+                  <button
+                    key={team.code}
+                    type="button"
+                    onClick={() => handleTeamToggle(team.code)}
+                    className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${
+                      formData.supportingTeams.includes(team.code)
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    {team.name}
+                  </button>
+                ))}
+              </div>
+              {formData.supportingTeams.length > 0 && (
+                <p className="mt-2 text-sm text-gray-600">
+                  선택된 구단: {formData.supportingTeams.map(code => TEAMS.find(t => t.code === code)?.name).join(', ')}
+                </p>
+              )}
             </div>
           </div>
 

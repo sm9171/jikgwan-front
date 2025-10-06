@@ -17,6 +17,7 @@ export interface SignupRequest {
   nickname: string
   gender: Gender
   ageRange: AgeRange
+  supportingTeams: string[]  // 응원 구단 배열
 }
 
 export interface TokenData {
