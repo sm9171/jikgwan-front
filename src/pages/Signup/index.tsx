@@ -19,6 +19,8 @@ export default function Signup() {
     ageRange: '' as AgeRange | '',
     supportingTeams: [] as string[],
   })
+  const [profileImage, setProfileImage] = useState<File | null>(null)
+  const [profileImagePreview, setProfileImagePreview] = useState<string>('')
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [isLoading, setIsLoading] = useState(false)
 
@@ -36,11 +38,40 @@ export default function Signup() {
     })
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // 이미지 파일 검증
+    if (!file.type.startsWith('image/')) {
+      toast.error('이미지 파일만 업로드 가능합니다')
+      return
+    }
+
+    // 파일 크기 검증 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('이미지 크기는 10MB 이하만 가능합니다')
+      return
+    }
+
+    setProfileImage(file)
+
+    // 미리보기 생성
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setProfileImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // 유효성 검사
-    const validationErrors = validateSignupForm(formData)
+    const validationErrors = validateSignupForm({
+      ...formData,
+      profileImage,
+    })
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
       return
@@ -55,6 +86,7 @@ export default function Signup() {
         gender: formData.gender as Gender,
         ageRange: formData.ageRange as AgeRange,
         supportingTeams: formData.supportingTeams,
+        profileImage: profileImage || undefined,
       })
 
       if ('success' in response && response.success) {
@@ -89,6 +121,49 @@ export default function Signup() {
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
           <div className="space-y-4">
+            {/* 프로필 이미지 업로드 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                프로필 이미지 <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center gap-4">
+                {profileImagePreview ? (
+                  <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-gray-300">
+                    <img
+                      src={profileImagePreview}
+                      alt="프로필 미리보기"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center border-2 border-dashed border-gray-300">
+                    <span className="text-gray-400 text-sm">이미지</span>
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    id="profile-image-input"
+                  />
+                  <label
+                    htmlFor="profile-image-input"
+                    className="inline-block px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium cursor-pointer transition-colors bg-white text-gray-700 hover:bg-gray-50"
+                  >
+                    이미지 선택
+                  </label>
+                  <p className="mt-1 text-xs text-gray-500">
+                    JPG, PNG 파일 (최대 10MB)
+                  </p>
+                </div>
+              </div>
+              {errors.profileImage && (
+                <p className="mt-1 text-sm text-red-500">{errors.profileImage}</p>
+              )}
+            </div>
+
             <Input
               label="이메일"
               type="email"
@@ -162,7 +237,7 @@ export default function Signup() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                응원하는 구단 (선택사항)
+                응원하는 구단 <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {TEAMS.map((team) => (
@@ -185,6 +260,7 @@ export default function Signup() {
                   선택된 구단: {formData.supportingTeams.map(code => TEAMS.find(t => t.code === code)?.name).join(', ')}
                 </p>
               )}
+              {errors.supportingTeams && <p className="mt-1 text-sm text-red-500">{errors.supportingTeams}</p>}
             </div>
           </div>
 
