@@ -23,10 +23,7 @@ client.interceptors.request.use(
 // Response Interceptor
 client.interceptors.response.use(
   (response) => {
-    // ApiResponse 구조에서 data를 추출
-    if (response.data && response.data.data !== undefined) {
-      return response.data.data
-    }
+    // 전체 응답 객체를 반환 (success, data, error 포함)
     return response.data
   },
   async (error) => {
@@ -59,6 +56,11 @@ client.interceptors.response.use(
         window.location.href = '/login'
         return Promise.reject(refreshError)
       }
+    }
+
+    // 에러 응답도 data 형태로 반환
+    if (error.response?.data) {
+      return Promise.reject(error.response.data)
     }
 
     return Promise.reject(error)
