@@ -10,6 +10,7 @@ import { ROUTES } from './constants/routes'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Home from './pages/Home'
+import GatheringDetail from './pages/GatheringDetail'
 
 // Query Client
 const queryClient = new QueryClient({
@@ -91,6 +92,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/gatherings/:id"
+            element={
+              <ProtectedRoute>
+                <GatheringDetail />
               </ProtectedRoute>
             }
           />
