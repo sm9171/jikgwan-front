@@ -18,6 +18,7 @@ export interface SignupRequest {
   gender: Gender
   ageRange: AgeRange
   supportingTeams: string[]  // 응원 구단 배열
+  profileImage?: File  // 프로필 이미지 파일 (선택사항)
 }
 
 export interface TokenData {
