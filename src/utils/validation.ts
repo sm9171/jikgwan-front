@@ -14,11 +14,10 @@ export const isValidPassword = (password: string): boolean => {
 }
 
 /**
- * 닉네임 검증 (2-10자, 한글/영문/숫자)
+ * 닉네임 검증 (2-20자)
  */
 export const isValidNickname = (nickname: string): boolean => {
-  const nicknameRegex = /^[가-힣a-zA-Z0-9]{2,10}$/
-  return nicknameRegex.test(nickname)
+  return nickname.length >= 2 && nickname.length <= 20
 }
 
 /**
@@ -26,6 +25,47 @@ export const isValidNickname = (nickname: string): boolean => {
  */
 export const isEmpty = (value: string): boolean => {
   return !value || value.trim().length === 0
+}
+
+/**
+ * 회원가입 폼 유효성 검사
+ */
+export const validateSignupForm = (data: {
+  email: string
+  password: string
+  nickname: string
+  gender?: string
+  ageRange?: string
+}): { [key: string]: string } => {
+  const errors: { [key: string]: string } = {}
+
+  if (!data.email) {
+    errors.email = '이메일을 입력해주세요'
+  } else if (!isValidEmail(data.email)) {
+    errors.email = '올바른 이메일 형식이 아닙니다'
+  }
+
+  if (!data.password) {
+    errors.password = '비밀번호를 입력해주세요'
+  } else if (!isValidPassword(data.password)) {
+    errors.password = '비밀번호는 최소 8자 이상이어야 합니다'
+  }
+
+  if (!data.nickname) {
+    errors.nickname = '닉네임을 입력해주세요'
+  } else if (!isValidNickname(data.nickname)) {
+    errors.nickname = '닉네임은 2-20자 사이여야 합니다'
+  }
+
+  if (!data.gender) {
+    errors.gender = '성별을 선택해주세요'
+  }
+
+  if (!data.ageRange) {
+    errors.ageRange = '연령대를 선택해주세요'
+  }
+
+  return errors
 }
 
 /**
