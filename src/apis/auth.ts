@@ -16,7 +16,26 @@ export const authApi = {
   },
 
   signup: async (data: SignupRequest): Promise<ApiResponse<User>> => {
-    return await client.post(API_ENDPOINTS.AUTH.SIGNUP, data)
+    const formData = new FormData()
+
+    // 기본 정보 추가
+    formData.append('email', data.email)
+    formData.append('password', data.password)
+    formData.append('nickname', data.nickname)
+    formData.append('gender', data.gender)
+    formData.append('ageRange', data.ageRange)
+
+    // 배열 데이터 추가 (각 팀을 개별적으로 append)
+    data.supportingTeams.forEach(team => {
+      formData.append('supportingTeams', team)
+    })
+
+    // 이미지 파일 추가 (있는 경우만)
+    if (data.profileImage) {
+      formData.append('profileImage', data.profileImage)
+    }
+
+    return await client.post(API_ENDPOINTS.AUTH.SIGNUP, formData)
   },
 
   logout: async (): Promise<void> => {
