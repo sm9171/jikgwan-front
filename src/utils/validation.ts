@@ -36,8 +36,14 @@ export const validateSignupForm = (data: {
   nickname: string
   gender?: string
   ageRange?: string
+  supportingTeams?: string[]
+  profileImage?: File | null
 }): { [key: string]: string } => {
   const errors: { [key: string]: string } = {}
+
+  if (!data.profileImage) {
+    errors.profileImage = '프로필 이미지를 업로드해주세요'
+  }
 
   if (!data.email) {
     errors.email = '이메일을 입력해주세요'
@@ -63,6 +69,10 @@ export const validateSignupForm = (data: {
 
   if (!data.ageRange) {
     errors.ageRange = '연령대를 선택해주세요'
+  }
+
+  if (!data.supportingTeams || data.supportingTeams.length === 0) {
+    errors.supportingTeams = '응원하는 구단을 최소 1개 이상 선택해주세요'
   }
 
   return errors
