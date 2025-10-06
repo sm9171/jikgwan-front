@@ -4,101 +4,63 @@ import { authApi } from '@/apis/auth'
 import { Input } from '@/components/Input'
 import { Button } from '@/components/Button'
 import { ROUTES } from '@/constants/routes'
-import { isValidEmail, isValidPassword, isValidNickname, isEmpty } from '@/utils/validation'
+import { validateSignupForm } from '@/utils/validation'
 import { toast } from 'react-toastify'
+import type { Gender, AgeRange } from '@/types/auth'
 
 export default function Signup() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    passwordConfirm: '',
     nickname: '',
+    gender: '' as Gender | '',
+    ageRange: '' as AgeRange | '',
   })
-  const [errors, setErrors] = useState({
-    email: '',
-    password: '',
-    passwordConfirm: '',
-    nickname: '',
-  })
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [isLoading, setIsLoading] = useState(false)
 
-  const validateField = (name: string, value: string): string => {
-    switch (name) {
-      case 'email':
-        if (isEmpty(value)) return '이메일을 입력해주세요.'
-        if (!isValidEmail(value)) return '올바른 이메일 형식이 아닙니다.'
-        return ''
-
-      case 'password':
-        if (isEmpty(value)) return '비밀번호를 입력해주세요.'
-        if (!isValidPassword(value)) return '비밀번호는 8자 이상이어야 합니다.'
-        return ''
-
-      case 'passwordConfirm':
-        if (isEmpty(value)) return '비밀번호 확인을 입력해주세요.'
-        if (value !== formData.password) return '비밀번호가 일치하지 않습니다.'
-        return ''
-
-      case 'nickname':
-        if (isEmpty(value)) return '닉네임을 입력해주세요.'
-        if (!isValidNickname(value)) return '닉네임은 2-10자의 한글, 영문, 숫자만 가능합니다.'
-        return ''
-
-      default:
-        return ''
-    }
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
-
-    // 실시간 유효성 검사
-    const error = validateField(name, value)
-    setErrors((prev) => ({ ...prev, [name]: error }))
-
-    // 비밀번호가 변경되면 비밀번호 확인도 재검사
-    if (name === 'password' && formData.passwordConfirm) {
-      const confirmError = formData.passwordConfirm !== value ? '비밀번호가 일치하지 않습니다.' : ''
-      setErrors((prev) => ({ ...prev, passwordConfirm: confirmError }))
-    }
-  }
-
-  const validateForm = (): boolean => {
-    const newErrors = {
-      email: validateField('email', formData.email),
-      password: validateField('password', formData.password),
-      passwordConfirm: validateField('passwordConfirm', formData.passwordConfirm),
-      nickname: validateField('nickname', formData.nickname),
-    }
-
-    setErrors(newErrors)
-
-    return !Object.values(newErrors).some((error) => error !== '')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm()) {
+    // 유효성 검사
+    const validationErrors = validateSignupForm(formData)
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
       return
     }
 
     setIsLoading(true)
     try {
-      await authApi.signup({
+      const response = await authApi.signup({
         email: formData.email,
         password: formData.password,
         nickname: formData.nickname,
+        gender: formData.gender as Gender,
+        ageRange: formData.ageRange as AgeRange,
       })
 
-      toast.success('회원가입이 완료되었습니다! 로그인해주세요.')
-      navigate(ROUTES.LOGIN)
+      if ('success' in response && response.success) {
+        toast.success('회원가입이 완료되었습니다! 로그인해주세요.')
+        navigate(ROUTES.LOGIN)
+      }
     } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.error?.message || '회원가입에 실패했습니다. 다시 시도해주세요.'
-      toast.error(errorMessage)
+      console.error('회원가입 에러:', error)
+
+      // ErrorResponse 타입인 경우
+      if (error?.errorCode) {
+        if (error.fieldErrors) {
+          setErrors(error.fieldErrors)
+        }
+        toast.error(error.message)
+      } else {
+        toast.error('회원가입에 실패했습니다. 다시 시도해주세요.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -134,18 +96,6 @@ export default function Signup() {
               onChange={handleChange}
               placeholder="8자 이상 입력해주세요"
               error={errors.password}
-              helperText="영문, 숫자, 특수문자를 조합하여 8자 이상 입력해주세요."
-              autoComplete="new-password"
-            />
-
-            <Input
-              label="비밀번호 확인"
-              type="password"
-              name="passwordConfirm"
-              value={formData.passwordConfirm}
-              onChange={handleChange}
-              placeholder="비밀번호를 다시 입력해주세요"
-              error={errors.passwordConfirm}
               autoComplete="new-password"
             />
 
@@ -155,11 +105,48 @@ export default function Signup() {
               name="nickname"
               value={formData.nickname}
               onChange={handleChange}
-              placeholder="2-10자 이내로 입력해주세요"
+              placeholder="2-20자 이내로 입력해주세요"
               error={errors.nickname}
-              helperText="한글, 영문, 숫자만 사용 가능합니다."
               autoComplete="username"
             />
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">성별</label>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${
+                  errors.gender ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">선택해주세요</option>
+                <option value="MALE">남성</option>
+                <option value="FEMALE">여성</option>
+                <option value="OTHER">기타</option>
+              </select>
+              {errors.gender && <p className="mt-1 text-sm text-red-500">{errors.gender}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">연령대</label>
+              <select
+                name="ageRange"
+                value={formData.ageRange}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${
+                  errors.ageRange ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">선택해주세요</option>
+                <option value="TEENS">10대</option>
+                <option value="TWENTIES">20대</option>
+                <option value="THIRTIES">30대</option>
+                <option value="FORTIES">40대</option>
+                <option value="FIFTIES_PLUS">50대 이상</option>
+              </select>
+              {errors.ageRange && <p className="mt-1 text-sm text-red-500">{errors.ageRange}</p>}
+            </div>
           </div>
 
           <Button type="submit" variant="primary" fullWidth isLoading={isLoading}>
