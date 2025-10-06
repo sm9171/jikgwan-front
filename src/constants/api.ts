@@ -11,12 +11,18 @@ export const API_ENDPOINTS = {
     MY_MEETINGS: '/users/me/meetings',
     MY_APPLICATIONS: '/users/me/applications',
   },
+  GATHERINGS: {
+    LIST: '/gatherings',
+    DETAIL: (id: number) => `/gatherings/${id}`,
+    CREATE: '/gatherings',
+  },
+  // 하위 호환성 (제거 예정)
   MEETINGS: {
-    LIST: '/meetings',
-    DETAIL: (id: number) => `/meetings/${id}`,
-    CREATE: '/meetings',
-    UPDATE: (id: number) => `/meetings/${id}`,
-    DELETE: (id: number) => `/meetings/${id}`,
+    LIST: '/gatherings',
+    DETAIL: (id: number) => `/gatherings/${id}`,
+    CREATE: '/gatherings',
+    UPDATE: (id: number) => `/gatherings/${id}`,
+    DELETE: (id: number) => `/gatherings/${id}`,
   },
   CHAT: {
     ROOMS: '/chat/rooms',
