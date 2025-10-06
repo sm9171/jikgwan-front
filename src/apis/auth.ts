@@ -1,13 +1,21 @@
 import client from './client'
 import { API_ENDPOINTS } from '@/constants/api'
-import type { LoginRequest, SignupRequest, AuthResponse, RefreshTokenRequest, RefreshTokenResponse } from '@/types/auth'
+import type {
+  LoginRequest,
+  SignupRequest,
+  TokenData,
+  RefreshTokenRequest,
+  RefreshTokenResponse,
+  ApiResponse
+} from '@/types/auth'
+import type { User } from '@/types/user'
 
 export const authApi = {
-  login: async (data: LoginRequest): Promise<AuthResponse> => {
+  login: async (data: LoginRequest): Promise<ApiResponse<TokenData>> => {
     return await client.post(API_ENDPOINTS.AUTH.LOGIN, data)
   },
 
-  signup: async (data: SignupRequest): Promise<AuthResponse> => {
+  signup: async (data: SignupRequest): Promise<ApiResponse<User>> => {
     return await client.post(API_ENDPOINTS.AUTH.SIGNUP, data)
   },
 

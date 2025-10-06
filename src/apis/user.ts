@@ -2,9 +2,10 @@ import client from './client'
 import { API_ENDPOINTS } from '@/constants/api'
 import type { User } from '@/types/user'
 import type { Meeting } from '@/types/meeting'
+import type { ApiResponse } from '@/types/auth'
 
 export const userApi = {
-  getMe: async (): Promise<User> => {
+  getMe: async (): Promise<ApiResponse<User>> => {
     return await client.get(API_ENDPOINTS.USER.ME)
   },
 
