@@ -27,4 +27,8 @@ export const userApi = {
     // axios가 자동으로 Content-Type을 설정하도록 Content-Type 헤더 제거
     return await client.post('/users/profile/image', formData)
   },
+
+  getUserById: async (userId: number): Promise<ApiResponse<User>> => {
+    return await client.get(`/users/${userId}`)
+  },
 }
