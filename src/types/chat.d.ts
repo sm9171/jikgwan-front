@@ -1,5 +1,7 @@
-import { User } from './user'
-import { GameInfo } from './meeting'
+import type { User } from './user'
+import type { GameInfo } from './meeting'
+
+export type { User, GameInfo }
 
 export interface ChatRoom {
   id: number
@@ -9,11 +11,15 @@ export interface ChatRoom {
   lastMessage?: Message
   unreadCount: number
   createdAt: string
+  hostId?: number
+  applicantId?: number
+  isConfirmed?: boolean  // 참여자 확정 여부
 }
 
 export interface MeetingInfo {
   id: number
   gameInfo: GameInfo
+  hostId: number
 }
 
 export interface Message {
@@ -21,17 +27,17 @@ export interface Message {
   chatRoomId: number
   senderId: number
   content: string
-  timestamp: string
-  isRead: boolean
-}
-
-export interface CreateChatRoomRequest {
-  meetingId: number
+  status?: 'SENT' | 'DELIVERED' | 'READ'
+  sentAt: string
 }
 
 export interface CreateChatRoomResponse {
-  chatRoomId: number
-  participants: User[]
+  id: number
+  gatheringId: number
+  hostId: number
+  applicantId: number
+  status: 'ACTIVE' | 'CLOSED'
+  createdAt: string
 }
 
 export interface WebSocketMessage {
