@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gatheringApi } from '@/apis/gathering'
 import { TEAMS, STADIUMS } from '@/constants/teams'
 import type { TeamCode, StadiumCode } from '@/constants/teams'
@@ -8,6 +8,7 @@ import { toast } from 'react-toastify'
 
 export default function GatheringCreate() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [formData, setFormData] = useState({
     gameDateTime: '',
     homeTeam: '' as TeamCode | '',
@@ -24,6 +25,8 @@ export default function GatheringCreate() {
     onSuccess: (response) => {
       if ('success' in response && response.success) {
         toast.success('모임이 생성되었습니다!')
+        // 모임 목록 쿼리 무효화 (홈 화면에서 새로고침되도록)
+        queryClient.invalidateQueries({ queryKey: ['gatherings'] })
         navigate(`/gatherings/${response.data.id}`)
       }
     },

@@ -1,11 +1,20 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { gatheringApi } from '@/apis/gathering'
+import { chatApi } from '@/apis/chat'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { TEAMS, STADIUMS } from '@/constants/teams'
+import { toast } from 'react-toastify'
+import { UserProfileModal } from '@/pages/Chat/components/UserProfileModal'
 
 export default function GatheringDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user } = useAuthStore()
+  const queryClient = useQueryClient()
+  const [showHostProfile, setShowHostProfile] = useState(false)
+  const [showParticipantProfile, setShowParticipantProfile] = useState<number | null>(null)
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['gathering', id],
@@ -14,6 +23,53 @@ export default function GatheringDetail() {
   })
 
   const gathering = data?.success ? data.data : null
+
+  // Check if current user is host
+  const isHost = gathering?.host.id === user?.id
+  const participants = gathering?.participants || []
+
+  // Create chat room mutation
+  const createChatMutation = useMutation({
+    mutationFn: (gatheringId: number) => chatApi.createChatRoom(gatheringId),
+    onSuccess: (response) => {
+      console.log('Chat room created:', response)
+      // Response format: { success: true, data: { id, gatheringId, hostId, applicantId, status, createdAt }, error: null }
+      const chatRoomId = response.data?.id
+      if (chatRoomId) {
+        // Invalidate chat queries to ensure fresh data
+        queryClient.invalidateQueries({ queryKey: ['chatRoom', String(chatRoomId)] })
+        queryClient.invalidateQueries({ queryKey: ['chatMessages', String(chatRoomId)] })
+        queryClient.invalidateQueries({ queryKey: ['chatRooms'] })
+
+        navigate(`/chat/${chatRoomId}`)
+      } else {
+        toast.error('채팅방 생성에 실패했습니다.')
+      }
+    },
+    onError: (error: any) => {
+      console.error('Chat room creation error:', error)
+      toast.error(error.response?.data?.error?.message || '채팅방 생성에 실패했습니다.')
+    }
+  })
+
+  const handleParticipate = () => {
+    if (!gathering) return
+
+    // Check if user is the host
+    if (gathering.host.id === user?.id) {
+      toast.info('자신이 만든 모임에는 참여 신청할 수 없습니다.')
+      return
+    }
+
+    // Check if chat room already exists
+    if (gathering.chatRoomId) {
+      navigate(`/chat/${gathering.chatRoomId}`)
+      return
+    }
+
+    // Create new chat room with gatheringId
+    createChatMutation.mutate(Number(id))
+  }
 
   const getTeamName = (teamCode: string) => {
     return TEAMS.find(t => t.code === teamCode)?.name || teamCode
@@ -112,10 +168,13 @@ export default function GatheringDetail() {
         </div>
 
         {/* 호스트 정보 */}
-        <div className="mb-6">
+        <div className="mb-6 pb-6 border-b">
           <h2 className="text-lg font-bold text-gray-900 mb-4">👤 모임 주최자</h2>
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+          <button
+            onClick={() => setShowHostProfile(true)}
+            className="flex items-center gap-4 w-full text-left hover:bg-gray-50 rounded-lg p-2 -ml-2 transition-colors"
+          >
+            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
               {gathering.host.profileImageUrl ? (
                 <img
                   src={gathering.host.profileImageUrl}
@@ -126,8 +185,10 @@ export default function GatheringDetail() {
                 <span className="text-2xl">👤</span>
               )}
             </div>
-            <div>
-              <p className="font-bold text-gray-900">{gathering.host.nickname}</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-900 hover:text-blue-500 transition-colors">
+                {gathering.host.nickname}
+              </p>
               <p className="text-sm text-gray-500">
                 {gathering.host.gender === 'MALE' ? '남성' : gathering.host.gender === 'FEMALE' ? '여성' : '기타'} ·{' '}
                 {gathering.host.ageRange
@@ -138,17 +199,84 @@ export default function GatheringDetail() {
                   .replace('FIFTIES_PLUS', '50대+')}
               </p>
             </div>
-          </div>
+            <svg
+              className="w-5 h-5 text-gray-400 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
         </div>
 
-        {/* 참여 신청 버튼 (추후 채팅 기능 연동) */}
-        <button
-          className="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90"
-          onClick={() => alert('채팅 기능은 추후 구현 예정입니다.')}
-        >
-          참여 신청하기
-        </button>
+        {/* 확정된 참여자 목록 */}
+        {participants.length > 0 && (
+          <div className="mb-6 pb-6 border-b">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">✅ 확정된 참여자 ({participants.length}명)</h2>
+            <div className="flex gap-2 flex-wrap">
+              {participants.map((participant) => (
+                <button
+                  key={participant.userId}
+                  onClick={() => setShowParticipantProfile(participant.userId)}
+                  className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center hover:ring-2 hover:ring-blue-500 transition-all"
+                  title="프로필 보기"
+                >
+                  {participant.profileImageUrl ? (
+                    <img
+                      src={participant.profileImageUrl}
+                      alt={`참여자 ${participant.userId}`}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xl">👤</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 참여 신청 버튼 */}
+        {gathering.host.id === user?.id ? (
+          <div className="w-full py-3 bg-gray-300 text-gray-600 font-bold rounded-lg text-center">
+            내가 만든 모임입니다
+          </div>
+        ) : (
+          <button
+            className="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            onClick={handleParticipate}
+            disabled={createChatMutation.isPending}
+          >
+            {createChatMutation.isPending
+              ? '처리 중...'
+              : gathering.chatRoomId
+              ? '채팅방으로 이동'
+              : '참여 신청하기'}
+          </button>
+        )}
       </div>
+
+      {/* Host Profile Modal */}
+      {showHostProfile && (
+        <UserProfileModal
+          userId={gathering.host.id}
+          onClose={() => setShowHostProfile(false)}
+        />
+      )}
+
+      {/* Participant Profile Modal */}
+      {showParticipantProfile && (
+        <UserProfileModal
+          userId={showParticipantProfile}
+          onClose={() => setShowParticipantProfile(null)}
+        />
+      )}
     </div>
   )
 }

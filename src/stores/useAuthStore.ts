@@ -58,10 +58,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  logout: () => {
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
-    set({ user: null, accessToken: null, isAuthenticated: false })
+  logout: async () => {
+    try {
+      // API 로그아웃 요청 (토큰 블랙리스트 등록)
+      await authApi.logout()
+    } catch (error) {
+      console.error('로그아웃 API 호출 실패:', error)
+      // API 실패해도 로컬 로그아웃은 진행
+    } finally {
+      // 로컬 스토리지 정리
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      // 상태 초기화
+      set({ user: null, accessToken: null, isAuthenticated: false })
+    }
   },
 
   setUser: (user) => {

@@ -18,6 +18,12 @@ export interface GameInfo {
   stadium: StadiumCode
 }
 
+// 모임 참여자 (간단한 정보만)
+export interface GatheringParticipant {
+  userId: number
+  profileImageUrl: string | null
+}
+
 // 모임 (Gathering)
 export interface Gathering {
   id: number
@@ -26,6 +32,8 @@ export interface Gathering {
   maxParticipants: number
   description: string
   host: GatheringHost
+  participants: GatheringParticipant[]  // 확정된 참여자 목록
+  chatRoomId?: number  // 현재 사용자와의 채팅방 ID (있는 경우)
   createdAt: string
 }
 

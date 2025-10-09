@@ -12,6 +12,7 @@ import Signup from './pages/Signup'
 import Home from './pages/Home'
 import GatheringDetail from './pages/GatheringDetail'
 import GatheringCreate from './pages/GatheringCreate'
+import Chat from './pages/Chat'
 
 // Query Client
 const queryClient = new QueryClient({
@@ -109,6 +110,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <GatheringCreate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat/:id"
+            element={
+              <ProtectedRoute>
+                <Chat />
               </ProtectedRoute>
             }
           />
