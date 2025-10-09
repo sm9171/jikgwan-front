@@ -7,7 +7,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      global: 'globalThis',
     },
+  },
+  define: {
+    global: 'globalThis',
   },
   build: {
     rollupOptions: {

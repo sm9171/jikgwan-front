@@ -21,6 +21,12 @@ client.interceptors.request.use(
       delete config.headers['Content-Type']
     }
 
+    // Log request for debugging
+    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
+      params: config.params,
+      data: config.data instanceof FormData ? 'FormData' : config.data
+    })
+
     return config
   },
   (error) => Promise.reject(error)
